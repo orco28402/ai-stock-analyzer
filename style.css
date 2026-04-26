@@ -1,67 +1,59 @@
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap');
+/* יבוא פונט עברי מודרני מגוגל */
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700&display=swap');
 
-/* הגדרות כלליות לאפליקציה - הפיכת האתר ל-RTL ושימוש בפונט המודרני */
-.stApp {
+/* יישור לימין ושינוי פונט לכל האתר */
+html, body, [class*="css"]  {
     direction: rtl;
-    font-family: 'Heebo', sans-serif !important;
-    background-color: #f4f7f6; /* רקע אפרפר-כחלחל עדין יוקרתי */
-}
-
-/* יישור כל האלמנטים לימין ושינוי גופן */
-p, div, h1, h2, h3, h4, h5, h6, span, label, input, li {
-    text-align: right !important;
+    text-align: right;
     font-family: 'Heebo', sans-serif !important;
 }
 
-/* הגדלת הכותרת הראשית */
-h1 {
-    font-size: 3rem !important;
-    font-weight: 900 !important;
-    color: #1e293b !important;
-    margin-bottom: 0px !important;
-}
-
-/* עיצוב המספרים (Metrics) שייראו מעולה */
-[data-testid="stMetricValue"] {
-    direction: ltr !important;
-    text-align: right !important;
-    font-size: 2.2rem !important;
-    font-weight: 700 !important;
-    color: #2563eb !important; /* כחול הייטק */
-}
-
-/* עיצוב כותרות המספרים */
-[data-testid="stMetricLabel"] {
-    font-size: 1.1rem !important;
-    font-weight: bold !important;
-    color: #64748b !important;
-}
-
-/* עיצוב כפתור הפעולה */
-.stButton > button {
-    float: right;
-    background-color: #2563eb;
+/* עיצוב תיבת החיפוש של המניה */
+.stTextInput>div>div>input {
+    background-color: #1E2130;
     color: white;
-    border-radius: 8px;
+    border-radius: 12px;
+    border: 1px solid #2962FF;
+    padding: 15px;
+    font-size: 1.1rem;
+}
+
+/* עיצוב הכפתור המרכזי */
+.stButton>button {
+    width: 100%;
+    border-radius: 12px;
+    background: linear-gradient(45deg, #2962FF, #00C853);
+    color: white;
+    font-weight: 700;
     font-size: 1.2rem;
-    padding: 0.5rem 2.5rem;
     border: none;
-    font-weight: bold;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: 0.3s ease;
-}
-.stButton > button:hover {
-    background-color: #1d4ed8;
-    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-    color: white;
+    padding: 10px;
+    transition: all 0.3s ease;
 }
 
-/* הודעות שגיאה ואזהרה */
-[data-testid="stAlert"] {
-    direction: rtl;
-    border-radius: 8px;
+/* אפקט ריחוף על הכפתור */
+.stButton>button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(41, 98, 255, 0.4);
+    color: white;
+    border: none;
 }
-/* העלמת התפריט העליון והתחתון של המערכת למראה נקי של אפליקציה */
-#MainMenu {visibility: hidden;}
-header {visibility: hidden;}
-footer {visibility: hidden;}
+
+/* עיצוב מספרי המדדים (מחיר, בטא וכו') */
+[data-testid="stMetricValue"] {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #00C853; /* צבע ירוק פיננסי */
+}
+
+[data-testid="stMetricLabel"] {
+    font-size: 1.1rem;
+    color: #A0AEC0;
+}
+
+/* ריווח וסידור הטקסט של ה-AI */
+.stMarkdown p {
+    font-size: 1.15rem;
+    line-height: 1.7;
+    color: #E2E8F0;
+}
