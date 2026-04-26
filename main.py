@@ -89,7 +89,7 @@ if st.button("בצע ניתוח מלא 🚀"):
                 
                 chat_completion = client.chat.completions.create(
                     messages=[{"role": "user", "content": prompt}],
-                    model="llama3-70b-8192",
+                    model="llama-3.3-70b-versatile",
                 )
                 
                 st.subheader("🧠 ניתוח בינה מלאכותית")
