@@ -2,105 +2,64 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 from google import genai
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 st.set_page_config(page_title="AI Stock Analyzer", page_icon="⚡", layout="wide")
 
+# טעינת ה-CSS ששיפרנו
 def local_css(file_name):
     try:
         with open(file_name, "r", encoding="utf-8") as f:
             st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
-    except:
-        pass
+    except: pass
 
 local_css("style.css")
 
-def get_market_mood(hist_data):
-    if len(hist_data) < 15: return "לא ידוע"
-    delta = hist_data['Close'].diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-    rs = gain / loss
-    rsi = 100 - (100 / (1 + rs))
-    current_rsi = rsi.iloc[-1]
-    
-    if current_rsi > 70: return "קניות יתר (זהירות)"
-    elif current_rsi < 30: return "מכירות יתר (הזדמנות?)"
-    else: return "ניטרלי"
+# פונקציה עקשנית לפנייה ל-AI - תנסה 3 פעמים לפני שתתייאש
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
+def generate_ai_analysis(client, prompt):
+    return client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
 
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
 except:
-    st.error("שגיאה: לא נמצא מפתח API בקובץ הסודות.")
+    st.error("שגיאה: חסר API Key ב-Secrets")
     st.stop()
 
 st.title("⚡ מערכת האנליסטים שלך")
-st.markdown("הזן סימול מניה וקבל ניתוח עומק מבוסס בינה מלאכותית, בזמן אמת.")
 
-ticker = st.text_input("🔍 הכנס סימול מניה (לדוגמה: AAPL, NVDA, DXYZ):").upper()
+ticker = st.text_input("🔍 הכנס סימול מניה (למשל: NVDA):").upper()
 
 if st.button("בצע ניתוח מלא 🚀"):
-    if not ticker:
-        st.warning("אנא הכנס סימול מניה.")
-    else:
-        with st.spinner(f"סורק את הרשת ומנתח את {ticker}..."):
-            # כאן מתחיל ה-TRY הגדול שמגן על כל התהליך
+    if ticker:
+        with st.spinner("מנתח נתונים..."):
             try:
-                client = genai.Client(api_key=api_key)
-                
-                # משיכת הנתונים מיאהו - עכשיו זה ירוץ עם curl_cffi אוטומטית מה-requirements
+                # משיכת נתונים מיאהו
                 stock = yf.Ticker(ticker)
                 info = stock.info
                 
-                # שליפת נתונים מה-info
-                current_price = info.get('currentPrice', info.get('regularMarketPrice', 'לא זמין'))
-                high_target = info.get('targetHighPrice', 'לא זמין')
-                low_target = info.get('targetLowPrice', 'לא זמין')
-                mean_target = info.get('targetMeanPrice', 'לא זמין')
+                # נתונים בסיסיים
+                cp = info.get('currentPrice', 'לא זמין')
+                mean_t = info.get('targetMeanPrice', 'לא זמין')
                 beta = info.get('beta', 'לא זמין')
-                summary = info.get('longBusinessSummary', 'לא נמצא תיאור.')
                 
-                hist_data = stock.history(period="3mo")
-                market_mood = get_market_mood(hist_data)
+                st.subheader("🎯 מדדי מפתח")
+                c1, c2, c3 = st.columns(3)
+                c1.metric("מחיר", f"${cp}")
+                c2.metric("יעד ממוצע", f"${mean_t}")
+                c3.metric("בטא", beta)
                 
-                # ניסיון מופרד למשוך דוחות וחדשות (כי לפעמים יאהו חוסמת רק אותם)
-                try:
-                    financials = stock.quarterly_financials
-                    latest_financials = financials.iloc[:, 0].to_dict() if not financials.empty else "לא זמין"
-                except:
-                    latest_financials = "לא זמין כרגע"
-                    
-                try:
-                    news_list = stock.news[:3]
-                except:
-                    news_list = []
+                # פנייה ל-AI עם מנגנון ה-Retry
+                client = genai.Client(api_key=api_key)
+                prompt = f"נתח בקצרה את מניית {ticker}. מחיר: {cp}, בטא: {beta}. תן שורה תחתונה בעברית."
                 
-                # תצוגת המדדים באתר
-                st.subheader("🎯 תחזיות וסיכונים")
-                col1, col2, col3 = st.columns(3)
-                col1.metric("מחיר נוכחי", f"${current_price}")
-                col2.metric("תחזית וול-סטריט (ממוצע)", f"${mean_target}")
-                col3.metric("מדד תנודתיות (Beta)", beta)
+                response = generate_ai_analysis(client, prompt)
                 
-                st.divider()
-                
-                # הכנת הפרומפט ל-AI
-                prompt = f"""
-                אתה אנליסט מומחה להשקעות שמייעץ למשקיע. נתח את {ticker}.
-                מחיר נוכחי: {current_price} | תחזיות: גבוהה ({high_target}), ממוצעת ({mean_target}), נמוכה ({low_target}).
-                בטא: {beta} | מומנטום: {market_mood} | דוח: {latest_financials} | חדשות: {str(news_list)}
-                
-                החזר דוח מסודר עם הכותרות הבאות:
-                ### 🏢 מה החברה עושה?
-                ### 📊 קולות מוול-סטריט והדוחות
-                ### 🚨 ניתוח סיכון
-                ### 💡 השורה התחתונה (ציון סנטימנט: [1-10] | ציון סיכון: [1-10])
-                """
-                
-                response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
-                
-                st.subheader("🧠 ניתוח ה-AI")
+                st.subheader("🧠 ניתוח בינה מלאכותית")
                 st.write(response.text)
                 
             except Exception as e:
-                # כאן אנחנו תופסים את השגיאה ומציגים אותה בצורה ברורה
-                st.error(f"שגיאה מפורטת: {e}")
+                if "Rate limited" in str(e) or "429" in str(e):
+                    st.error("השרת של גוגל עמוס בגלל עומס משתמשים בענן. נסה שוב בעוד דקה, זה בדרך כלל מסתדר.")
+                else:
+                    st.error(f"שגיאה: {e}")
