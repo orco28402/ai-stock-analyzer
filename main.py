@@ -14,7 +14,10 @@ def local_css():
     html, body, [class*="st-"], [data-testid="stAppViewContainer"] {
         direction: rtl; text-align: right; font-family: 'Assistant', sans-serif !important;
     }
-    h1, h2, h3 { color: #2962FF !important; font-weight: 800 !important; }
+    
+    /* מירכוז כותרת ראשית */
+    h1 { color: #2962FF !important; font-weight: 800 !important; text-align: center; margin-bottom: 30px;}
+    h2, h3 { color: #2962FF !important; font-weight: 800 !important; }
     
     [data-testid="stMetric"] {
         background-color: #1E2130; padding: 15px; border-radius: 12px;
@@ -36,7 +39,7 @@ def local_css():
         box-shadow: 0 4px 15px rgba(41, 98, 255, 0.3) !important;
     }
     
-    [data-testid="stChart"] { background-color: #1E2130; border-radius: 15px; padding: 10px; }
+    [data-testid="stChart"] { background-color: #1E2130; border-radius: 15px; padding: 10px; margin-top: 20px; }
     """
     st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
 
@@ -63,26 +66,28 @@ except:
     st.stop()
 
 st.title("⚡ מערכת האנליסטים המקצועית")
-ticker = st.text_input("🔍 הכנס סימול מניה (לדוגמה: NVDA, TSLA, MSFT):").upper()
 
-if st.button("בצע ניתוח עומק 🚀"):
+# --- התיקון העיצובי: מירכוז והקטנת תיבת החיפוש ---
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    ticker = st.text_input("🔍 הכנס סימול מניה (לדוגמה: NVDA, TSLA):", max_chars=6).upper()
+    analyze_btn = st.button("בצע ניתוח עומק 🚀")
+
+if analyze_btn:
     if not ticker:
         st.warning("אנא הכנס סימול מניה.")
     else:
         with st.spinner(f"שואב נתונים ומכין ניתוח עבור {ticker}..."):
             try:
-                # משיכת נתונים
                 stock = yf.Ticker(ticker)
                 info = stock.info
                 
                 st.header(f"{info.get('longName', ticker)}")
                 
-                # --- חלק 1: גרף אינטראקטיבי (שנה קבועה עם זום חופשי) ---
-                st.subheader("📈 גרף מחיר (שנה אחרונה - גלול עם העכבר/אצבעות לזום)")
+                st.subheader("📈 גרף מחיר (שנה אחרונה - גלול פנימה לזום)")
                 hist = stock.history(period="1y")
                 st.line_chart(hist['Close'], color="#2962FF")
 
-                # --- חלק 2: מדדי מפתח ---
                 st.subheader("🎯 נתונים פיננסיים")
                 cp = info.get('currentPrice', info.get('regularMarketPrice', 'N/A'))
                 target = info.get('targetMeanPrice', 'N/A')
@@ -102,28 +107,21 @@ if st.button("בצע ניתוח עומק 🚀"):
 
                 st.divider()
 
-                # --- חלק 3: ניתוח ה-AI החכם ---
                 st.subheader("🧠 דוח משקיעים (Powered by AI)")
                 
                 client = Groq(api_key=api_key)
-                
-                # שאיבת החדשות ותיאור החברה כדי שה-AI יקרא ויסכם הכל בעצמו
                 company_desc = info.get('longBusinessSummary', 'אין מידע זמין.')
-                try:
-                    news_data = stock.news[:3] if stock.news else []
-                except:
-                    news_data = []
 
+                # --- עדכון הפרומפט כולל ההמלצה המפורשת ---
                 prompt = f"""
                 אתה אנליסט מומחה. המשתמש מחפש ניתוח קצר, קולע ומקצועי בעברית למניית {ticker}.
                 נתונים: מחיר {cp}, מכפיל {pe}, בטא {beta}.
-                פרופיל חברה באנגלית (תרגם ותמצת לעברית קלה): {company_desc}
-                חדשות: {str(news_data)}
+                פרופיל חברה באנגלית: {company_desc}
                 
                 החזר את הניתוח בדיוק לפי המבנה הזה:
                 
                 ### 🏢 תעודת זהות
-                (תמצת את תיאור החברה לעברית ב-2 משפטים קצרים. בלי לחפור).
+                (תמצת את תיאור החברה לעברית ב-2 משפטים קצרים).
                 
                 ### 🟢 פוטנציאל וצמיחה (Bull Case)
                 (2-3 סיבות לקנות. חובה להתחיל כל נקודה ב-🟢)
@@ -134,7 +132,10 @@ if st.button("בצע ניתוח עומק 🚀"):
                 ### 💡 השורה התחתונה
                 **ציון סנטימנט (1-10):** [מספר]
                 **רמת סיכון (1-10):** [מספר]
-                **המלצה מעשית למשקיע:** (משפט ברור ומודגש שממליץ האם זה זמן טוב לקנות, להמתין, או שזה גבולי כרגע בהתבסס על הנתונים).
+                
+                ### ⏱️ זמן לקנייה?
+                **החלטה:** [קנייה / קנייה חזקה / להמתין / מסוכן]
+                **הסבר קצר:** (משפט או שניים שמסבירים בצורה ברורה אם זה הזמן לקנות, ואם לא - למה צריך לחכות כדי להיכנס למניה).
                 """
                 
                 chat = client.chat.completions.create(
@@ -145,4 +146,4 @@ if st.button("בצע ניתוח עומק 🚀"):
                 st.markdown(chat.choices[0].message.content)
 
             except Exception as e:
-                st.error("אירעה שגיאה בטעינת המניה. ודא שהסימול תקין (למשל AAPL ולא אפל) ונסה שוב.")
+                st.error("אירעה שגיאה בטעינת המניה. ודא שהסימול תקין ונסה שוב.")
