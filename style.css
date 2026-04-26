@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap');
+
+/* הגדרות כלליות לאפליקציה - הפיכת האתר ל-RTL ושימוש בפונט המודרני */
+.stApp {
+    direction: rtl;
+    font-family: 'Heebo', sans-serif !important;
+    background-color: #f4f7f6; /* רקע אפרפר-כחלחל עדין יוקרתי */
+}
+
+/* יישור כל האלמנטים לימין ושינוי גופן */
+p, div, h1, h2, h3, h4, h5, h6, span, label, input, li {
+    text-align: right !important;
+    font-family: 'Heebo', sans-serif !important;
+}
+
+/* הגדלת הכותרת הראשית */
+h1 {
+    font-size: 3rem !important;
+    font-weight: 900 !important;
+    color: #1e293b !important;
+    margin-bottom: 0px !important;
+}
+
+/* עיצוב המספרים (Metrics) שייראו מעולה */
+[data-testid="stMetricValue"] {
+    direction: ltr !important;
+    text-align: right !important;
+    font-size: 2.2rem !important;
+    font-weight: 700 !important;
+    color: #2563eb !important; /* כחול הייטק */
+}
+
+/* עיצוב כותרות המספרים */
+[data-testid="stMetricLabel"] {
+    font-size: 1.1rem !important;
+    font-weight: bold !important;
+    color: #64748b !important;
+}
+
+/* עיצוב כפתור הפעולה */
+.stButton > button {
+    float: right;
+    background-color: #2563eb;
+    color: white;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    padding: 0.5rem 2.5rem;
+    border: none;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: 0.3s ease;
+}
+.stButton > button:hover {
+    background-color: #1d4ed8;
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    color: white;
+}
+
+/* הודעות שגיאה ואזהרה */
+[data-testid="stAlert"] {
+    direction: rtl;
+    border-radius: 8px;
+}
+/* העלמת התפריט העליון והתחתון של המערכת למראה נקי של אפליקציה */
+#MainMenu {visibility: hidden;}
+header {visibility: hidden;}
+footer {visibility: hidden;}
