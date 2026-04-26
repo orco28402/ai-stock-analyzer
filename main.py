@@ -90,4 +90,4 @@ if st.button("בצע ניתוח מלא 🚀"):
                 st.write(response.text)
                 
             except Exception as e:
-                st.error("אופס, אירעה שגיאה. נסה מניה אחרת.")
+                st.error(f"שגיאה מפורטת: {e}")
