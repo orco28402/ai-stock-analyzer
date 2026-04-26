@@ -13,7 +13,6 @@ def local_css(file_name):
 
 local_css("style.css")
 
-# החזרנו את הפונקציה שבודקת את מומנטום המניה!
 def get_market_mood(hist_data):
     if len(hist_data) < 15: return "לא ידוע"
     delta = hist_data['Close'].diff()
@@ -40,11 +39,9 @@ if st.button("בצע ניתוח מלא 🚀"):
     if ticker:
         with st.spinner("שואב נתונים ומנתח..."):
             try:
-                # יאהו פיננסים (תעבוד עם curl_cffi שמוגדר ב-requirements)
                 stock = yf.Ticker(ticker)
                 info = stock.info
                 
-                # משיכת כל הנתונים העמוקים חזרה
                 cp = info.get('currentPrice', info.get('regularMarketPrice', 'לא זמין'))
                 high_target = info.get('targetHighPrice', 'לא זמין')
                 low_target = info.get('targetLowPrice', 'לא זמין')
@@ -67,24 +64,38 @@ if st.button("בצע ניתוח מלא 🚀"):
                 
                 st.subheader("🎯 מדדי מפתח")
                 c1, c2, c3 = st.columns(3)
-                c1.metric("מחיר נוכחי", f"${cp}")
-                c2.metric("יעד ממוצע", f"${mean_t}")
-                c3.metric("בטא", beta)
+                
+                # --- כאן הוספנו את ההסברים הקופצים (Tooltips) ---
+                c1.metric("מחיר נוכחי", f"${cp}", help="המחיר האחרון שבו נסחרה המניה בוול-סטריט.")
+                c2.metric("יעד ממוצע", f"${mean_t}", help="המחיר שאליו מעריכים האנליסטים שהמניה תגיע בשנה הקרובה.")
+                c3.metric("בטא (Beta)", beta, help="מדד רמת הסיכון: בטא מעל 1 מצביעה על מניה תנודתית ומסוכנת יותר מהשוק. בטא מתחת ל-1 מצביעה על מניה יציבה יותר.")
                 
                 st.divider()
                 
-                # הפרומפט המקצועי והעשיר שאהבת חוזר לפעולה מול מודל Llama 3!
                 client = Groq(api_key=api_key)
-                prompt = f"""
-                אתה אנליסט מומחה להשקעות שמייעץ למשקיע. נתח את {ticker}.
-                מחיר נוכחי: {cp} | תחזיות: גבוהה ({high_target}), ממוצעת ({mean_t}), נמוכה ({low_target}).
-                בטא: {beta} | מומנטום: {market_mood} | דוח: {latest_financials} | חדשות: {str(news_list)}
                 
-                החזר דוח מסודר עם הכותרות הבאות וכתוב אך ורק בעברית:
+                # --- עדכנו את הפרומפט כדי שיחזיר תשובה מרוווחת עם נקודות ---
+                prompt = f"""
+                אתה אנליסט מומחה להשקעות. נתח את {ticker}.
+                מחיר: {cp} | תחזיות: ממוצעת ({mean_t}).
+                בטא: {beta} | מומנטום: {market_mood} | חדשות: {str(news_list)}
+                
+                החזר דוח מסודר, מרוווח וקריא מאוד, עם הכותרות הבאות. 
+                חובה להשתמש בנקודות (Bullet points) בכל פסקה ולא לכתוב גושי טקסט ארוכים:
+                
                 ### 🏢 מה החברה עושה?
-                ### 📊 קולות מוול-סטריט והדוחות
+                * (הסבר קצר ותמציתי)
+                
+                ### 📊 קולות מוול-סטריט
+                * (ניתוח תחזיות ומומנטום)
+                
                 ### 🚨 ניתוח סיכון
-                ### 💡 השורה התחתונה (ציון סנטימנט: [1-10] | ציון סיכון: [1-10])
+                * (התייחסות למדד הבטא ולסיכונים כלליים)
+                
+                ### 💡 השורה התחתונה
+                * **ציון סנטימנט (1-10):** [מספר]
+                * **ציון סיכון (1-10):** [מספר]
+                * (משפט סיכום למשקיע)
                 """
                 
                 chat_completion = client.chat.completions.create(

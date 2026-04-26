@@ -56,3 +56,12 @@ h1 {
     border: 1px solid #30363D;
     line-height: 1.8;
 }
+/* עיצוב רשימות ונקודות (Bullet points) בתוך הניתוח */
+.stMarkdown ul {
+    padding-right: 25px;
+}
+.stMarkdown li {
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+    color: #E2E8F0;
+}
