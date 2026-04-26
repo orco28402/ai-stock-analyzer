@@ -84,7 +84,7 @@ if st.button("בצע ניתוח מלא 🚀"):
                 ### 💡 השורה התחתונה (ציון סנטימנט: [1-10] | ציון סיכון: [1-10])
                 """
                 
-                response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
+                response = client.models.generate_content(model='gemini-1.5-flash', contents=prompt)
                 
                 st.subheader("🧠 ניתוח ה-AI")
                 st.write(response.text)
