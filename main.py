@@ -2,6 +2,7 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 from google import genai
+import requests
 
 st.set_page_config(page_title="AI Stock Analyzer", page_icon="⚡", layout="wide")
 
@@ -15,8 +16,7 @@ def local_css(file_name):
 local_css("style.css")
 
 def get_market_mood(hist_data):
-    if len(hist_data) < 15:
-        return "לא ידוע"
+    if len(hist_data) < 15: return "לא ידוע"
     delta = hist_data['Close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
@@ -28,7 +28,6 @@ def get_market_mood(hist_data):
     elif current_rsi < 30: return "מכירות יתר (הזדמנות?)"
     else: return "ניטרלי"
 
-# --- משיכת המפתח מקובץ הסודות שיצרנו! ---
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
 except:
@@ -36,9 +35,8 @@ except:
     st.stop()
 
 st.title("⚡ מערכת האנליסטים שלך")
-st.markdown("הזן סימול מניה וקבל ניתוח עומק מבוסס בינה מלאכותית, ללא צורך בהזנת מפתחות.")
+st.markdown("הזן סימול מניה וקבל ניתוח עומק מבוסס בינה מלאכותית, בזמן אמת.")
 
-# חיפוש מרכזי וגדול
 ticker = st.text_input("🔍 הכנס סימול מניה (לדוגמה: AAPL, NVDA, DXYZ):").upper()
 
 if st.button("בצע ניתוח מלא 🚀"):
@@ -48,7 +46,15 @@ if st.button("בצע ניתוח מלא 🚀"):
         with st.spinner(f"סורק את הרשת ומנתח את {ticker}..."):
             try:
                 client = genai.Client(api_key=api_key)
-                stock = yf.Ticker(ticker)
+                
+                # --- התיקון החכם: "תחפושת" של דפדפן רגיל לעקיפת החסימה ---
+                session = requests.Session()
+                session.headers.update({
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+                })
+                
+                # מעבירים את ה-Session המוסווה שלנו ל-Yahoo Finance
+                stock = yf.Ticker(ticker, session=session)
                 info = stock.info
                 
                 current_price = info.get('currentPrice', info.get('regularMarketPrice', 'לא זמין'))
@@ -60,9 +66,18 @@ if st.button("בצע ניתוח מלא 🚀"):
                 
                 hist_data = stock.history(period="3mo")
                 market_mood = get_market_mood(hist_data)
-                financials = stock.quarterly_financials
-                latest_financials = financials.iloc[:, 0].to_dict() if not financials.empty else "לא זמין"
-                news_list = stock.news[:3]
+                
+                # ניסיון למשוך דוחות וחדשות, בלי לקרוס אם יאהו חוסמת חלקית
+                try:
+                    financials = stock.quarterly_financials
+                    latest_financials = financials.iloc[:, 0].to_dict() if not financials.empty else "לא זמין"
+                except:
+                    latest_financials = "לא זמין כרגע"
+                    
+                try:
+                    news_list = stock.news[:3]
+                except:
+                    news_list = []
                 
                 st.subheader("🎯 תחזיות וסיכונים")
                 col1, col2, col3 = st.columns(3)
@@ -84,10 +99,11 @@ if st.button("בצע ניתוח מלא 🚀"):
                 ### 💡 השורה התחתונה (ציון סנטימנט: [1-10] | ציון סיכון: [1-10])
                 """
                 
-                response = client.models.generate_content(model='gemini-1.5-flash', contents=prompt)
+                # החזרנו למודל החכם ביותר שיש לנו
+                response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
                 
                 st.subheader("🧠 ניתוח ה-AI")
                 st.write(response.text)
                 
             except Exception as e:
-                st.error(f"שגיאה מפורטת: {e}")
+                st.error(f"שגיאה בתקשורת עם השרתים: {e}")
