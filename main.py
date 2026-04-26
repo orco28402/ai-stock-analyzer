@@ -3,56 +3,69 @@ import yfinance as yf
 import pandas as pd
 from groq import Groq
 
-# הגדרות עמוד ועיצוב בסיסי
 st.set_page_config(page_title="StockAI Premium", page_icon="⚡", layout="wide")
 
-# טעינת העיצוב מה-CSS (הפעם עם היררכיה ויזואלית משופרת)
 def local_css():
     css = """
     @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;700;800&display=swap');
     
-    html, body, [class*="st-"], [data-testid="stAppViewContainer"] {
-        direction: rtl; text-align: right; font-family: 'Assistant', sans-serif !important;
+    /* יישור לימין קשוח לכל האלמנטים */
+    .stApp, .stMarkdown, .stMarkdown p, .stMarkdown li, div[data-testid="stText"] {
+        direction: rtl !important;
+        text-align: right !important;
+        font-family: 'Assistant', sans-serif !important;
     }
     
-    /* כותרות */
-    h1 { color: #2962FF !important; font-weight: 800 !important; text-align: center; font-size: 2.5rem !important; }
-    h2 { color: #2962FF !important; font-weight: 800 !important; font-size: 2rem !important; margin-top: 20px; }
-    h3 { color: #448AFF !important; font-weight: 700 !important; font-size: 1.5rem !important; border-right: 4px solid #2962FF; padding-right: 10px; margin-top: 25px; margin-bottom: 15px; }
+    /* כותרות מתאימות את עצמן למסך */
+    h1 { color: #2962FF !important; font-weight: 800 !important; text-align: center; font-size: clamp(1.8rem, 5vw, 2.5rem) !important; margin-bottom: 20px;}
+    h2 { color: #2962FF !important; font-weight: 800 !important; font-size: clamp(1.5rem, 4vw, 2rem) !important; margin-top: 20px; }
+    h3 { color: #448AFF !important; font-weight: 700 !important; font-size: clamp(1.2rem, 3vw, 1.5rem) !important; border-right: 4px solid #2962FF; padding-right: 10px; margin-top: 20px; margin-bottom: 10px; }
     
-    /* כרטיסיות מדדים */
+    /* כרטיסיות נתונים */
     [data-testid="stMetric"] {
-        background-color: #1E2130; padding: 20px; border-radius: 12px;
+        background-color: #1E2130; padding: 15px; border-radius: 12px;
         border-right: 5px solid #2962FF; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
     
     /* תיבת הטקסט של ה-AI */
     .stMarkdown {
-        background-color: #161B22; padding: 30px; border-radius: 18px;
-        border: 1px solid #30363D; line-height: 1.9; font-size: 1.2rem !important; color: #E2E8F0;
+        background-color: #161B22; padding: 20px; border-radius: 15px;
+        border: 1px solid #30363D; color: #E2E8F0;
     }
     
-    /* הדגשות בתוך הטקסט */
+    /* גודל טקסט ריספונסיבי - מושלם למחשב וטלפון */
+    .stMarkdown p, .stMarkdown li {
+        font-size: 1.15rem !important;
+        line-height: 1.6 !important;
+    }
+    
+    /* התאמות ספציפיות למסכים קטנים (טלפונים) */
+    @media (max-width: 768px) {
+        .stMarkdown p, .stMarkdown li { font-size: 1.05rem !important; }
+        .stMarkdown { padding: 15px; }
+        [data-testid="stMetric"] { padding: 10px; }
+    }
+    
+    /* הדגשות */
     strong { color: #64B5F6 !important; font-weight: 700 !important; }
     
-    .stMarkdown ul { padding-right: 25px !important; }
-    .stMarkdown li { margin-bottom: 12px; }
+    /* סידור רשימות ללא כפילויות */
+    .stMarkdown ul { padding-right: 20px !important; margin-right: 0 !important; }
     
-    /* כפתור חיפוש */
+    /* עיצוב כפתור */
     .stButton button {
         background: linear-gradient(90deg, #2962FF 0%, #00C853 100%) !important;
         color: white !important; border: none !important; border-radius: 20px !important;
-        width: 100%; font-weight: bold !important; padding: 12px !important; font-size: 1.3rem !important;
+        width: 100%; font-weight: bold !important; padding: 12px !important; font-size: 1.2rem !important;
         box-shadow: 0 4px 15px rgba(41, 98, 255, 0.3) !important;
     }
     
-    [data-testid="stChart"] { background-color: #1E2130; border-radius: 15px; padding: 15px; margin-top: 25px; }
+    [data-testid="stChart"] { background-color: #1E2130; border-radius: 15px; padding: 10px; margin-top: 15px; }
     """
     st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
 
 local_css()
 
-# פונקציית עזר לחישוב מומנטום
 def get_market_mood(hist_data):
     if len(hist_data) < 15: return "ניטרלי"
     delta = hist_data['Close'].diff()
@@ -65,7 +78,6 @@ def get_market_mood(hist_data):
     elif curr < 30: return "מכירות יתר (הזדמנות)"
     return "ניטרלי"
 
-# אימות מפתח API
 try:
     api_key = st.secrets["GROQ_API_KEY"]
 except:
@@ -74,7 +86,6 @@ except:
 
 st.title("⚡ מערכת האנליסטים המקצועית")
 
-# חיפוש ממוקד
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     ticker = st.text_input("🔍 הכנס סימול מניה (לדוגמה: NVDA, TSLA):", max_chars=6).upper()
@@ -104,12 +115,12 @@ if analyze_btn:
                 
                 c1, c2, c3 = st.columns(3)
                 c1.metric("מחיר נוכחי", f"${cp}")
-                c2.metric("מחיר יעד (אנליסטים)", f"${target}")
+                c2.metric("מחיר יעד", f"${target}")
                 c3.metric("בטא (Beta)", beta)
                 
                 c4, c5, c6 = st.columns(3)
                 c4.metric("שווי שוק", f"${m_cap:,.0f}" if isinstance(m_cap, (int, float)) else "N/A")
-                c5.metric("מכפיל רווח (P/E)", pe)
+                c5.metric("מכפיל רווח", pe)
                 c6.metric("מומנטום", get_market_mood(hist))
 
                 st.divider()
@@ -119,21 +130,22 @@ if analyze_btn:
                 client = Groq(api_key=api_key)
                 company_desc = info.get('longBusinessSummary', 'אין מידע זמין.')
 
+                # --- התיקון הקריטי לפרומפט ---
                 prompt = f"""
                 אתה אנליסט מומחה. המשתמש מחפש ניתוח קצר, קריא מאוד ומקצועי בעברית למניית {ticker}.
                 נתונים: מחיר {cp}, מכפיל {pe}, בטא {beta}.
                 פרופיל חברה באנגלית: {company_desc}
                 
-                החזר את הניתוח בדיוק לפי המבנה הזה (השתמש בכותרות Markdown עם ###):
+                החזר את הניתוח בדיוק לפי המבנה הזה:
                 
                 ### 🏢 תעודת זהות
                 (תמצית קצרה בעברית).
                 
                 ### 🟢 פוטנציאל וצמיחה (Bull Case)
-                (נקודות עם 🟢)
+                (כתוב 2-3 סיבות לקנות. **חשוב מאוד: אל תשתמש בכוכביות או במקפים!** התחל כל שורה רק עם האימוג'י 🟢)
                 
                 ### 🔴 סיכונים מרכזיים (Bear Case)
-                (נקודות עם 🔴)
+                (כתוב 2-3 סיכונים. **חשוב מאוד: אל תשתמש בכוכביות או במקפים!** התחל כל שורה רק עם האימוג'י 🔴)
                 
                 ### 💡 השורה התחתונה
                 - **ציון סנטימנט (1-10):** [ציון]
