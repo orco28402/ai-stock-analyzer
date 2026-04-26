@@ -3,8 +3,10 @@ import yfinance as yf
 import pandas as pd
 from groq import Groq
 
-st.set_page_config(page_title="AI Stock Analyzer", page_icon="⚡", layout="wide")
+# הגדרות עמוד ועיצוב בסיסי
+st.set_page_config(page_title="StockAI Premium", page_icon="⚡", layout="wide")
 
+# טעינת העיצוב מה-CSS
 def local_css(file_name):
     try:
         with open(file_name, "r", encoding="utf-8") as f:
@@ -13,98 +15,112 @@ def local_css(file_name):
 
 local_css("style.css")
 
+# פונקציית עזר לחישוב מומנטום (RSI)
 def get_market_mood(hist_data):
-    if len(hist_data) < 15: return "לא ידוע"
+    if len(hist_data) < 15: return "ניטרלי"
     delta = hist_data['Close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
     rs = gain / loss
     rsi = 100 - (100 / (1 + rs))
-    current_rsi = rsi.iloc[-1]
-    
-    if current_rsi > 70: return "קניות יתר (זהירות)"
-    elif current_rsi < 30: return "מכירות יתר (הזדמנות?)"
-    else: return "ניטרלי"
+    curr = rsi.iloc[-1]
+    if curr > 70: return "קניות יתר (זהירות)"
+    elif curr < 30: return "מכירות יתר (הזדמנות)"
+    return "ניטרלי"
 
+# אימות מפתח API
 try:
     api_key = st.secrets["GROQ_API_KEY"]
 except:
     st.error("שגיאה: חסר מפתח API של Groq ב-Secrets")
     st.stop()
 
-st.title("⚡ מערכת האנליסטים שלך")
-ticker = st.text_input("🔍 הכנס סימול מניה (למשל: NVDA, AAPL):").upper()
+st.title("⚡ מערכת האנליסטים המקצועית")
+ticker = st.text_input("🔍 הכנס סימול מניה (לדוגמה: NVDA, TSLA, MSFT):").upper()
 
-if st.button("בצע ניתוח מלא 🚀"):
-    if ticker:
-        with st.spinner("שואב נתונים ומנתח..."):
+if st.button("בצע ניתוח עומק 🚀"):
+    if not ticker:
+        st.warning("אנא הכנס סימול מניה.")
+    else:
+        with st.spinner(f"סורק נתונים עבור {ticker}..."):
             try:
+                # משיכת נתונים (יעבוד עם curl_cffi שמוגדר ב-requirements)
                 stock = yf.Ticker(ticker)
                 info = stock.info
                 
-                cp = info.get('currentPrice', info.get('regularMarketPrice', 'לא זמין'))
-                high_target = info.get('targetHighPrice', 'לא זמין')
-                low_target = info.get('targetLowPrice', 'לא זמין')
-                mean_t = info.get('targetMeanPrice', 'לא זמין')
-                beta = info.get('beta', 'לא זמין')
+                # כותרת עם שם החברה המלא
+                st.header(f"{info.get('longName', ticker)}")
                 
-                hist_data = stock.history(period="3mo")
-                market_mood = get_market_mood(hist_data)
-                
-                try:
-                    financials = stock.quarterly_financials
-                    latest_financials = financials.iloc[:, 0].to_dict() if not financials.empty else "לא זמין"
-                except:
-                    latest_financials = "לא זמין כרגע"
-                    
-                try:
-                    news_list = stock.news[:3]
-                except:
-                    news_list = []
-                
-                st.subheader("🎯 מדדי מפתח")
-                c1, c2, c3 = st.columns(3)
-                
-                # --- כאן הוספנו את ההסברים הקופצים (Tooltips) ---
-                c1.metric("מחיר נוכחי", f"${cp}", help="המחיר האחרון שבו נסחרה המניה בוול-סטריט.")
-                c2.metric("יעד ממוצע", f"${mean_t}", help="המחיר שאליו מעריכים האנליסטים שהמניה תגיע בשנה הקרובה.")
-                c3.metric("בטא (Beta)", beta, help="מדד רמת הסיכון: בטא מעל 1 מצביעה על מניה תנודתית ומסוכנת יותר מהשוק. בטא מתחת ל-1 מצביעה על מניה יציבה יותר.")
-                
-                st.divider()
-                
-                client = Groq(api_key=api_key)
-                
-                # --- עדכנו את הפרומפט כדי שיחזיר תשובה מרוווחת עם נקודות ---
-                prompt = f"""
-                אתה אנליסט מומחה להשקעות. נתח את {ticker}.
-                מחיר: {cp} | תחזיות: ממוצעת ({mean_t}).
-                בטא: {beta} | מומנטום: {market_mood} | חדשות: {str(news_list)}
-                
-                החזר דוח מסודר, מרוווח וקריא מאוד, עם הכותרות הבאות. 
-                חובה להשתמש בנקודות (Bullet points) בכל פסקה ולא לכתוב גושי טקסט ארוכים:
-                
-                ### 🏢 מה החברה עושה?
-                * (הסבר קצר ותמציתי)
-                
-                ### 📊 קולות מוול-סטריט
-                * (ניתוח תחזיות ומומנטום)
-                
-                ### 🚨 ניתוח סיכון
-                * (התייחסות למדד הבטא ולסיכונים כלליים)
-                
-                ### 💡 השורה התחתונה
-                * **ציון סנטימנט (1-10):** [מספר]
-                * **ציון סיכון (1-10):** [מספר]
-                * (משפט סיכום למשקיע)
-                """
-                
-                chat_completion = client.chat.completions.create(
-                    messages=[{"role": "user", "content": prompt}],
-                    model="llama-3.3-70b-versatile",
+                # --- חלק 1: גרף אינטראקטיבי ---
+                st.subheader("📈 גרף מחיר היסטורי")
+                time_range = st.select_slider(
+                    "בחר טווח זמן:",
+                    options=["שבוע", "חודש", "3 חודשים", "חצי שנה", "שנה"],
+                    value="3 חודשים"
                 )
+                range_map = {"שבוע": "5d", "חודש": "1mo", "3 חודשים": "3mo", "חצי שנה": "6mo", "שנה": "1y"}
+                hist = stock.history(period=range_map[time_range])
+                st.line_chart(hist['Close'], color="#2962FF")
+
+                # --- חלק 2: מדדי מפתח עם הסברים (Tooltips) ---
+                st.subheader("🎯 נתונים פיננסיים")
+                cp = info.get('currentPrice', info.get('regularMarketPrice', 'N/A'))
+                target = info.get('targetMeanPrice', 'N/A')
+                beta = info.get('beta', 'N/A')
+                m_cap = info.get('marketCap', 0)
+                pe = info.get('trailingPE', 'N/A')
                 
-                st.subheader("🧠 ניתוח בינה מלאכותית")
-                st.write(chat_completion.choices[0].message.content)
+                c1, c2, c3 = st.columns(3)
+                c1.metric("מחיר נוכחי", f"${cp}", help="המחיר האחרון של המניה בשוק.")
+                c2.metric("מחיר יעד (אנליסטים)", f"${target}", help="ממוצע התחזיות של אנליסטים בוול-סטריט לשנה הקרובה.")
+                c3.metric("בטא (Beta)", beta, help="מדד תנודתיות: מעל 1 נחשב מסוכן מהשוק, מתחת ל-1 יציב יותר.")
                 
+                c4, c5, c6 = st.columns(3)
+                c4.metric("שווי שוק", f"${m_cap:,.0f}" if m_cap else "N/A", help="הערך הכולל של החברה בבורסה.")
+                c5.metric("מכפיל רווח (P/E)", pe, help="כמה השוק מוכן לשלם על כל דולר של רווח. גבוה מדי עלול להעיד על מניה יקרה.")
+                c6.metric("מומנטום", get_market_mood(hist))
+
+                st.divider()
+
+                # --- חלק 3: טאבים לניתוח, חדשות ופרופיל ---
+                t_ai, t_news, t_profile = st.tabs(["🧠 ניתוח AI עמוק", "📰 חדשות חמות", "🏢 אודות החברה"])
+
+                with t_ai:
+                    client = Groq(api_key=api_key)
+                    prompt = f"""
+                    נתח את מניית {ticker}. נתונים: מחיר {cp}, מכפיל {pe}, בטא {beta}.
+                    החזר דוח בעברית מסודר עם נקודות (bullets):
+                    ### 🏢 תמצית הפעילות
+                    ### 📈 פוטנציאל וצמיחה (Bull Case)
+                    ### ⚠️ סיכונים מרכזיים (Bear Case)
+                    ### 💡 סיכום וציונים
+                    - סנטימנט (1-10): [ציון מעולה/שלילי]
+                    - רמת סיכון (1-10): [ציון גבוה/נמוך]
+                    """
+                    
+                    chat = client.chat.completions.create(
+                        messages=[{"role": "user", "content": prompt}],
+                        model="llama-3.3-70b-versatile",
+                    )
+                    st.markdown(chat.choices[0].message.content)
+
+                with t_news:
+                    st.subheader("כותרות אחרונות מהשוק")
+                    news = stock.news
+                    if news:
+                        for item in news[:5]:
+                            st.markdown(f"🔗 **[{item['title']}]({item['link']})**")
+                            st.caption(f"פורסם ע"י: {item['publisher']}")
+                            st.write("---")
+                    else:
+                        st.info("אין חדשות זמינות כרגע.")
+
+                with t_profile:
+                    st.subheader("כרטיס ביקור")
+                    st.write(f"**סקטור:** {info.get('sector', 'N/A')}")
+                    st.write(f"**תעשייה:** {info.get('industry', 'N/A')}")
+                    st.write(f"**עובדים:** {info.get('fullTimeEmployees', 'N/A'):,}")
+                    st.write(f"**תיאור:** {info.get('longBusinessSummary', 'אין תיאור זמין.')}")
+
             except Exception as e:
-                st.error(f"שגיאה: {e}")
+                st.error(f"אירעה שגיאה בשליפת הנתונים: {e}")

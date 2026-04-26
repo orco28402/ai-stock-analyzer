@@ -1,67 +1,81 @@
 /* פונט עברי מודרני */
-@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;700;800&display=swap');
 
-/* הגדרות כלליות ליישור לימין */
-html, body, [class*="st-"] {
+/* הגדרות בסיסיות ויישור לימין (RTL) */
+html, body, [class*="st-"], [data-testid="stAppViewContainer"] {
     direction: rtl;
     text-align: right;
     font-family: 'Assistant', sans-serif !important;
 }
 
-/* כותרת ראשית מרשימה */
-h1 {
+/* עיצוב כותרות */
+h1, h2, h3 {
     color: #2962FF !important;
     font-weight: 800 !important;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
 }
 
-/* עיצוב כרטיסיות הנתונים (מחיר, בטא וכו') */
+/* עיצוב כרטיסיות המדדים (Metrics) */
 [data-testid="stMetric"] {
     background-color: #1E2130;
     padding: 15px;
-    border-radius: 15px;
+    border-radius: 12px;
     border-right: 5px solid #2962FF;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 
-/* עיצוב תיבת הקלט */
-.stTextInput input {
-    border-radius: 10px !important;
-    border: 1px solid #2962FF !important;
-}
-
-/* כפתור "וואו" - גדול וזוהר */
-.stButton button {
-    background: linear-gradient(90deg, #2962FF 0%, #00C853 100%) !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 25px !important;
-    padding: 15px 30px !important;
-    font-size: 1.2rem !important;
+/* --- עיצוב הטאבים (Tabs) החדשים --- */
+button[data-baseweb="tab"] {
+    font-size: 1.1rem !important;
     font-weight: bold !important;
-    transition: 0.3s !important;
-    box-shadow: 0 4px 15px rgba(41, 98, 255, 0.4) !important;
+    color: #A0AEC0 !important;
+    padding: 10px 20px !important;
 }
 
-.stButton button:hover {
-    transform: scale(1.02);
-    box-shadow: 0 6px 20px rgba(41, 98, 255, 0.6) !important;
+/* עיצוב הטאב שנבחר */
+button[aria-selected="true"] {
+    color: #2962FF !important;
+    border-bottom: 3px solid #2962FF !important;
 }
 
-/* עיצוב הטקסט של ה-AI שיהיה קריא ונעים */
-.stMarkdown {
+/* עיצוב תיבת הטקסט של ה-AI והחדשות */
+.stMarkdown, [data-testid="stExpander"] {
     background-color: #161B22;
     padding: 20px;
     border-radius: 15px;
     border: 1px solid #30363D;
     line-height: 1.8;
 }
-/* עיצוב רשימות ונקודות (Bullet points) בתוך הניתוח */
+
+/* תיקון נקודות (Bullets) שיהיו צמודות לטקסט */
 .stMarkdown ul {
-    padding-right: 25px;
+    padding-right: 20px !important;
+    margin-right: 0px !important;
 }
+
 .stMarkdown li {
-    margin-bottom: 12px;
-    font-size: 1.1rem;
-    color: #E2E8F0;
+    margin-bottom: 8px;
+}
+
+/* עיצוב הכפתור המרכזי */
+.stButton button {
+    background: linear-gradient(90deg, #2962FF 0%, #00C853 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 20px !important;
+    width: 100%;
+    font-weight: bold !important;
+    padding: 12px !important;
+    box-shadow: 0 4px 15px rgba(41, 98, 255, 0.3) !important;
+}
+
+/* עיצוב הגרף - מוודא שהוא יושב טוב */
+[data-testid="stChart"] {
+    background-color: #1E2130;
+    border-radius: 15px;
+    padding: 10px;
+}
+
+/* צבעים לציונים (הדגשות) */
+strong {
+    color: #2962FF;
 }
