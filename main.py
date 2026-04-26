@@ -51,12 +51,14 @@ if st.button("בצע ניתוח עומק 🚀"):
                 # כותרת עם שם החברה המלא
                 st.header(f"{info.get('longName', ticker)}")
                 
-                # --- חלק 1: גרף אינטראקטיבי ---
+                # --- חלק 1: גרף אינטראקטיבי מתוקן ---
                 st.subheader("📈 גרף מחיר היסטורי")
-                time_range = st.select_slider(
+                # התיקון לסליידר השבור: שימוש בכפתורי בחירה אופקיים
+                time_range = st.radio(
                     "בחר טווח זמן:",
                     options=["שבוע", "חודש", "3 חודשים", "חצי שנה", "שנה"],
-                    value="3 חודשים"
+                    index=2,
+                    horizontal=True
                 )
                 range_map = {"שבוע": "5d", "חודש": "1mo", "3 חודשים": "3mo", "חצי שנה": "6mo", "שנה": "1y"}
                 hist = stock.history(period=range_map[time_range])
@@ -87,7 +89,24 @@ if st.button("בצע ניתוח עומק 🚀"):
 
                 with t_ai:
                     client = Groq(api_key=api_key)
-                    prompt = f"נתח את מניית {ticker}. נתונים: מחיר {cp}, מכפיל {pe}, בטא {beta}. החזר דוח בעברית מסודר עם נקודות: ### 🏢 תמצית הפעילות ### 📈 פוטנציאל וצמיחה (Bull Case) ### ⚠️ סיכונים מרכזיים (Bear Case) ### 💡 סיכום וציונים - סנטימנט (1-10): [ציון] - רמת סיכון (1-10): [ציון]"
+                    # הפרומפט החדש שעושה סדר מטורף בעיניים ומוסיף ירוק ואדום
+                    prompt = f"""
+                    נתח את מניית {ticker}. נתונים: מחיר {cp}, מכפיל {pe}, בטא {beta}.
+                    החזר דוח בעברית מסודר לפי המבנה הבא בדיוק:
+                    
+                    ### 🏢 תמצית הפעילות
+                    (הסבר קצר על החברה)
+                    
+                    ### 🟢 פוטנציאל וצמיחה (Bull Case)
+                    (ציין סיבות מרכזיות לקנות את המניה. חובה להתחיל כל נקודה באימוג'י 🟢)
+                    
+                    ### 🔴 סיכונים מרכזיים (Bear Case)
+                    (ציין ממה צריך להיזהר. חובה להתחיל כל נקודה באימוג'י 🔴)
+                    
+                    ### 💡 סיכום וציונים
+                    - סנטימנט (1-10): [ציון]
+                    - רמת סיכון (1-10): [ציון]
+                    """
                     
                     chat = client.chat.completions.create(
                         messages=[{"role": "user", "content": prompt}],
@@ -97,15 +116,22 @@ if st.button("בצע ניתוח עומק 🚀"):
 
                 with t_news:
                     st.subheader("כותרות אחרונות מהשוק")
-                    news = stock.news
-                    if news:
-                        for item in news[:5]:
-                            st.markdown(f"🔗 **[{item['title']}]({item['link']})**")
-                            # כאן התיקון - השתמשתי בגרש בודד לעטוף את הטקסט כדי שלא יתנגש עם ע"י
-                            st.caption(f'פורסם ע"י: {item.get("publisher", "Unknown")}')
-                            st.write("---")
-                    else:
-                        st.info("אין חדשות זמינות כרגע.")
+                    try:
+                        news = stock.news
+                        if news:
+                            for item in news[:5]:
+                                # משיכה בטוחה שמונעת קריסה אם יאהו שולחים נתון חסר
+                                title = item.get('title', 'לכתבה המלאה')
+                                link = item.get('link', '#')
+                                publisher = item.get('publisher', 'מקור לא ידוע')
+                                
+                                st.markdown(f"🔗 **[{title}]({link})**")
+                                st.caption(f'פורסם ע"י: {publisher}')
+                                st.write("---")
+                        else:
+                            st.info("אין חדשות זמינות כרגע.")
+                    except Exception as e:
+                        st.warning("התרחשה שגיאה במשיכת החדשות מיאהו פיננסים. נסה שוב מאוחר יותר.")
 
                 with t_profile:
                     st.subheader("כרטיס ביקור")
@@ -116,4 +142,5 @@ if st.button("בצע ניתוח עומק 🚀"):
                     st.write(f"**תיאור:** {info.get('longBusinessSummary', 'אין תיאור זמין.')}")
 
             except Exception as e:
-                st.error(f"אירעה שגיאה בשליפת הנתונים: {e}")
+                # שגיאה כללית למקרה של קריסה מלאה (למשל מניה לא קיימת)
+                st.error("אירעה שגיאה. ודא שסימול המניה תקין (למשל AAPL ולא אפל) ונסה שוב.")
