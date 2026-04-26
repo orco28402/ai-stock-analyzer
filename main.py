@@ -6,7 +6,7 @@ from groq import Groq
 # הגדרות עמוד ועיצוב בסיסי
 st.set_page_config(page_title="StockAI Premium", page_icon="⚡", layout="wide")
 
-# טעינת העיצוב מה-CSS
+# טעינת העיצוב מה-CSS (הפעם עם היררכיה ויזואלית משופרת)
 def local_css():
     css = """
     @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;700;800&display=swap');
@@ -15,31 +15,38 @@ def local_css():
         direction: rtl; text-align: right; font-family: 'Assistant', sans-serif !important;
     }
     
-    /* מירכוז כותרת ראשית */
-    h1 { color: #2962FF !important; font-weight: 800 !important; text-align: center; margin-bottom: 30px;}
-    h2, h3 { color: #2962FF !important; font-weight: 800 !important; }
+    /* כותרות */
+    h1 { color: #2962FF !important; font-weight: 800 !important; text-align: center; font-size: 2.5rem !important; }
+    h2 { color: #2962FF !important; font-weight: 800 !important; font-size: 2rem !important; margin-top: 20px; }
+    h3 { color: #448AFF !important; font-weight: 700 !important; font-size: 1.5rem !important; border-right: 4px solid #2962FF; padding-right: 10px; margin-top: 25px; margin-bottom: 15px; }
     
+    /* כרטיסיות מדדים */
     [data-testid="stMetric"] {
-        background-color: #1E2130; padding: 15px; border-radius: 12px;
+        background-color: #1E2130; padding: 20px; border-radius: 12px;
         border-right: 5px solid #2962FF; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
     
+    /* תיבת הטקסט של ה-AI */
     .stMarkdown {
-        background-color: #161B22; padding: 25px; border-radius: 15px;
-        border: 1px solid #30363D; line-height: 1.8; font-size: 1.1rem;
+        background-color: #161B22; padding: 30px; border-radius: 18px;
+        border: 1px solid #30363D; line-height: 1.9; font-size: 1.2rem !important; color: #E2E8F0;
     }
     
-    .stMarkdown ul { padding-right: 20px !important; margin-right: 0px !important; }
-    .stMarkdown li { margin-bottom: 8px; }
+    /* הדגשות בתוך הטקסט */
+    strong { color: #64B5F6 !important; font-weight: 700 !important; }
     
+    .stMarkdown ul { padding-right: 25px !important; }
+    .stMarkdown li { margin-bottom: 12px; }
+    
+    /* כפתור חיפוש */
     .stButton button {
         background: linear-gradient(90deg, #2962FF 0%, #00C853 100%) !important;
         color: white !important; border: none !important; border-radius: 20px !important;
-        width: 100%; font-weight: bold !important; padding: 12px !important; font-size: 1.2rem !important;
+        width: 100%; font-weight: bold !important; padding: 12px !important; font-size: 1.3rem !important;
         box-shadow: 0 4px 15px rgba(41, 98, 255, 0.3) !important;
     }
     
-    [data-testid="stChart"] { background-color: #1E2130; border-radius: 15px; padding: 10px; margin-top: 20px; }
+    [data-testid="stChart"] { background-color: #1E2130; border-radius: 15px; padding: 15px; margin-top: 25px; }
     """
     st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
 
@@ -67,7 +74,7 @@ except:
 
 st.title("⚡ מערכת האנליסטים המקצועית")
 
-# --- התיקון העיצובי: מירכוז והקטנת תיבת החיפוש ---
+# חיפוש ממוקד
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     ticker = st.text_input("🔍 הכנס סימול מניה (לדוגמה: NVDA, TSLA):", max_chars=6).upper()
@@ -77,14 +84,14 @@ if analyze_btn:
     if not ticker:
         st.warning("אנא הכנס סימול מניה.")
     else:
-        with st.spinner(f"שואב נתונים ומכין ניתוח עבור {ticker}..."):
+        with st.spinner(f"סורק נתונים ומכין ניתוח עבור {ticker}..."):
             try:
                 stock = yf.Ticker(ticker)
                 info = stock.info
                 
                 st.header(f"{info.get('longName', ticker)}")
                 
-                st.subheader("📈 גרף מחיר (שנה אחרונה - גלול פנימה לזום)")
+                st.subheader("📈 גרף מחיר (שנה אחרונה)")
                 hist = stock.history(period="1y")
                 st.line_chart(hist['Close'], color="#2962FF")
 
@@ -112,30 +119,29 @@ if analyze_btn:
                 client = Groq(api_key=api_key)
                 company_desc = info.get('longBusinessSummary', 'אין מידע זמין.')
 
-                # --- עדכון הפרומפט כולל ההמלצה המפורשת ---
                 prompt = f"""
-                אתה אנליסט מומחה. המשתמש מחפש ניתוח קצר, קולע ומקצועי בעברית למניית {ticker}.
+                אתה אנליסט מומחה. המשתמש מחפש ניתוח קצר, קריא מאוד ומקצועי בעברית למניית {ticker}.
                 נתונים: מחיר {cp}, מכפיל {pe}, בטא {beta}.
                 פרופיל חברה באנגלית: {company_desc}
                 
-                החזר את הניתוח בדיוק לפי המבנה הזה:
+                החזר את הניתוח בדיוק לפי המבנה הזה (השתמש בכותרות Markdown עם ###):
                 
                 ### 🏢 תעודת זהות
-                (תמצת את תיאור החברה לעברית ב-2 משפטים קצרים).
+                (תמצית קצרה בעברית).
                 
                 ### 🟢 פוטנציאל וצמיחה (Bull Case)
-                (2-3 סיבות לקנות. חובה להתחיל כל נקודה ב-🟢)
+                (נקודות עם 🟢)
                 
                 ### 🔴 סיכונים מרכזיים (Bear Case)
-                (2-3 סיכונים וממה להיזהר. חובה להתחיל כל נקודה ב-🔴)
+                (נקודות עם 🔴)
                 
                 ### 💡 השורה התחתונה
-                **ציון סנטימנט (1-10):** [מספר]
-                **רמת סיכון (1-10):** [מספר]
+                - **ציון סנטימנט (1-10):** [ציון]
+                - **רמת סיכון (1-10):** [ציון]
                 
                 ### ⏱️ זמן לקנייה?
                 **החלטה:** [קנייה / קנייה חזקה / להמתין / מסוכן]
-                **הסבר קצר:** (משפט או שניים שמסבירים בצורה ברורה אם זה הזמן לקנות, ואם לא - למה צריך לחכות כדי להיכנס למניה).
+                **הסבר:** (הסבר קצר וברור האם זה הזמן להיכנס או לחכות).
                 """
                 
                 chat = client.chat.completions.create(
