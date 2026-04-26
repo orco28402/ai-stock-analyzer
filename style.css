@@ -1,59 +1,58 @@
-/* יבוא פונט עברי מודרני מגוגל */
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700&display=swap');
+/* פונט עברי מודרני */
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;700&display=swap');
 
-/* יישור לימין ושינוי פונט לכל האתר */
-html, body, [class*="css"]  {
+/* הגדרות כלליות ליישור לימין */
+html, body, [class*="st-"] {
     direction: rtl;
     text-align: right;
-    font-family: 'Heebo', sans-serif !important;
+    font-family: 'Assistant', sans-serif !important;
 }
 
-/* עיצוב תיבת החיפוש של המניה */
-.stTextInput>div>div>input {
+/* כותרת ראשית מרשימה */
+h1 {
+    color: #2962FF !important;
+    font-weight: 800 !important;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+/* עיצוב כרטיסיות הנתונים (מחיר, בטא וכו') */
+[data-testid="stMetric"] {
     background-color: #1E2130;
-    color: white;
-    border-radius: 12px;
-    border: 1px solid #2962FF;
     padding: 15px;
-    font-size: 1.1rem;
+    border-radius: 15px;
+    border-right: 5px solid #2962FF;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-/* עיצוב הכפתור המרכזי */
-.stButton>button {
-    width: 100%;
-    border-radius: 12px;
-    background: linear-gradient(45deg, #2962FF, #00C853);
-    color: white;
-    font-weight: 700;
-    font-size: 1.2rem;
-    border: none;
-    padding: 10px;
-    transition: all 0.3s ease;
+/* עיצוב תיבת הקלט */
+.stTextInput input {
+    border-radius: 10px !important;
+    border: 1px solid #2962FF !important;
 }
 
-/* אפקט ריחוף על הכפתור */
-.stButton>button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(41, 98, 255, 0.4);
-    color: white;
-    border: none;
+/* כפתור "וואו" - גדול וזוהר */
+.stButton button {
+    background: linear-gradient(90deg, #2962FF 0%, #00C853 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 25px !important;
+    padding: 15px 30px !important;
+    font-size: 1.2rem !important;
+    font-weight: bold !important;
+    transition: 0.3s !important;
+    box-shadow: 0 4px 15px rgba(41, 98, 255, 0.4) !important;
 }
 
-/* עיצוב מספרי המדדים (מחיר, בטא וכו') */
-[data-testid="stMetricValue"] {
-    font-size: 2.2rem;
-    font-weight: 700;
-    color: #00C853; /* צבע ירוק פיננסי */
+.stButton button:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px rgba(41, 98, 255, 0.6) !important;
 }
 
-[data-testid="stMetricLabel"] {
-    font-size: 1.1rem;
-    color: #A0AEC0;
-}
-
-/* ריווח וסידור הטקסט של ה-AI */
-.stMarkdown p {
-    font-size: 1.15rem;
-    line-height: 1.7;
-    color: #E2E8F0;
+/* עיצוב הטקסט של ה-AI שיהיה קריא ונעים */
+.stMarkdown {
+    background-color: #161B22;
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid #30363D;
+    line-height: 1.8;
 }
