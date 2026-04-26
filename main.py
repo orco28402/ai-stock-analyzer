@@ -5,7 +5,6 @@ from groq import Groq
 
 st.set_page_config(page_title="AI Stock Analyzer", page_icon="⚡", layout="wide")
 
-# טעינת העיצוב שלנו
 def local_css(file_name):
     try:
         with open(file_name, "r", encoding="utf-8") as f:
@@ -14,7 +13,20 @@ def local_css(file_name):
 
 local_css("style.css")
 
-# משיכת המפתח החדש מהסודות
+# החזרנו את הפונקציה שבודקת את מומנטום המניה!
+def get_market_mood(hist_data):
+    if len(hist_data) < 15: return "לא ידוע"
+    delta = hist_data['Close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+    rs = gain / loss
+    rsi = 100 - (100 / (1 + rs))
+    current_rsi = rsi.iloc[-1]
+    
+    if current_rsi > 70: return "קניות יתר (זהירות)"
+    elif current_rsi < 30: return "מכירות יתר (הזדמנות?)"
+    else: return "ניטרלי"
+
 try:
     api_key = st.secrets["GROQ_API_KEY"]
 except:
@@ -26,15 +38,32 @@ ticker = st.text_input("🔍 הכנס סימול מניה (למשל: NVDA, AAPL)
 
 if st.button("בצע ניתוח מלא 🚀"):
     if ticker:
-        with st.spinner("שואב נתונים מיאהו ומנתח במהירות שיא..."):
+        with st.spinner("שואב נתונים ומנתח..."):
             try:
-                # משיכת נתונים מיאהו
+                # יאהו פיננסים (תעבוד עם curl_cffi שמוגדר ב-requirements)
                 stock = yf.Ticker(ticker)
                 info = stock.info
                 
-                cp = info.get('currentPrice', 'לא זמין')
+                # משיכת כל הנתונים העמוקים חזרה
+                cp = info.get('currentPrice', info.get('regularMarketPrice', 'לא זמין'))
+                high_target = info.get('targetHighPrice', 'לא זמין')
+                low_target = info.get('targetLowPrice', 'לא זמין')
                 mean_t = info.get('targetMeanPrice', 'לא זמין')
                 beta = info.get('beta', 'לא זמין')
+                
+                hist_data = stock.history(period="3mo")
+                market_mood = get_market_mood(hist_data)
+                
+                try:
+                    financials = stock.quarterly_financials
+                    latest_financials = financials.iloc[:, 0].to_dict() if not financials.empty else "לא זמין"
+                except:
+                    latest_financials = "לא זמין כרגע"
+                    
+                try:
+                    news_list = stock.news[:3]
+                except:
+                    news_list = []
                 
                 st.subheader("🎯 מדדי מפתח")
                 c1, c2, c3 = st.columns(3)
@@ -42,16 +71,20 @@ if st.button("בצע ניתוח מלא 🚀"):
                 c2.metric("יעד ממוצע", f"${mean_t}")
                 c3.metric("בטא", beta)
                 
-                # פנייה ל-Groq AI (מודל Llama 3 70B)
+                st.divider()
+                
+                # הפרומפט המקצועי והעשיר שאהבת חוזר לפעולה מול מודל Llama 3!
                 client = Groq(api_key=api_key)
                 prompt = f"""
-                אתה אנליסט מומחה. נתח את מניית {ticker}. 
-                מחיר נוכחי: {cp}, בטא: {beta}.
-                כתוב דוח קצר, מקצועי וברור הכולל:
-                1. מה החברה עושה במשפט.
-                2. סיכונים וסיכויים.
-                3. שורה תחתונה למשקיע.
-                * חשוב מאוד: ענה אך ורק בשפה העברית.
+                אתה אנליסט מומחה להשקעות שמייעץ למשקיע. נתח את {ticker}.
+                מחיר נוכחי: {cp} | תחזיות: גבוהה ({high_target}), ממוצעת ({mean_t}), נמוכה ({low_target}).
+                בטא: {beta} | מומנטום: {market_mood} | דוח: {latest_financials} | חדשות: {str(news_list)}
+                
+                החזר דוח מסודר עם הכותרות הבאות וכתוב אך ורק בעברית:
+                ### 🏢 מה החברה עושה?
+                ### 📊 קולות מוול-סטריט והדוחות
+                ### 🚨 ניתוח סיכון
+                ### 💡 השורה התחתונה (ציון סנטימנט: [1-10] | ציון סיכון: [1-10])
                 """
                 
                 chat_completion = client.chat.completions.create(
@@ -59,7 +92,7 @@ if st.button("בצע ניתוח מלא 🚀"):
                     model="llama3-70b-8192",
                 )
                 
-                st.subheader("🧠 ניתוח בינה מלאכותית (Powered by Llama-3)")
+                st.subheader("🧠 ניתוח בינה מלאכותית")
                 st.write(chat_completion.choices[0].message.content)
                 
             except Exception as e:
