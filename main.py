@@ -44,7 +44,7 @@ if st.button("בצע ניתוח עומק 🚀"):
     else:
         with st.spinner(f"סורק נתונים עבור {ticker}..."):
             try:
-                # משיכת נתונים (יעבוד עם curl_cffi שמוגדר ב-requirements)
+                # משיכת נתונים
                 stock = yf.Ticker(ticker)
                 info = stock.info
                 
@@ -62,7 +62,7 @@ if st.button("בצע ניתוח עומק 🚀"):
                 hist = stock.history(period=range_map[time_range])
                 st.line_chart(hist['Close'], color="#2962FF")
 
-                # --- חלק 2: מדדי מפתח עם הסברים (Tooltips) ---
+                # --- חלק 2: מדדי מפתח ---
                 st.subheader("🎯 נתונים פיננסיים")
                 cp = info.get('currentPrice', info.get('regularMarketPrice', 'N/A'))
                 target = info.get('targetMeanPrice', 'N/A')
@@ -76,27 +76,18 @@ if st.button("בצע ניתוח עומק 🚀"):
                 c3.metric("בטא (Beta)", beta, help="מדד תנודתיות: מעל 1 נחשב מסוכן מהשוק, מתחת ל-1 יציב יותר.")
                 
                 c4, c5, c6 = st.columns(3)
-                c4.metric("שווי שוק", f"${m_cap:,.0f}" if m_cap else "N/A", help="הערך הכולל של החברה בבורסה.")
-                c5.metric("מכפיל רווח (P/E)", pe, help="כמה השוק מוכן לשלם על כל דולר של רווח. גבוה מדי עלול להעיד על מניה יקרה.")
+                c4.metric("שווי שוק", f"${m_cap:,.0f}" if isinstance(m_cap, (int, float)) else "N/A", help="הערך הכולל של החברה בבורסה.")
+                c5.metric("מכפיל רווח (P/E)", pe, help="כמה השוק מוכן לשלם על כל דולר של רווח.")
                 c6.metric("מומנטום", get_market_mood(hist))
 
                 st.divider()
 
-                # --- חלק 3: טאבים לניתוח, חדשות ופרופיל ---
+                # --- חלק 3: טאבים ---
                 t_ai, t_news, t_profile = st.tabs(["🧠 ניתוח AI עמוק", "📰 חדשות חמות", "🏢 אודות החברה"])
 
                 with t_ai:
                     client = Groq(api_key=api_key)
-                    prompt = f"""
-                    נתח את מניית {ticker}. נתונים: מחיר {cp}, מכפיל {pe}, בטא {beta}.
-                    החזר דוח בעברית מסודר עם נקודות (bullets):
-                    ### 🏢 תמצית הפעילות
-                    ### 📈 פוטנציאל וצמיחה (Bull Case)
-                    ### ⚠️ סיכונים מרכזיים (Bear Case)
-                    ### 💡 סיכום וציונים
-                    - סנטימנט (1-10): [ציון מעולה/שלילי]
-                    - רמת סיכון (1-10): [ציון גבוה/נמוך]
-                    """
+                    prompt = f"נתח את מניית {ticker}. נתונים: מחיר {cp}, מכפיל {pe}, בטא {beta}. החזר דוח בעברית מסודר עם נקודות: ### 🏢 תמצית הפעילות ### 📈 פוטנציאל וצמיחה (Bull Case) ### ⚠️ סיכונים מרכזיים (Bear Case) ### 💡 סיכום וציונים - סנטימנט (1-10): [ציון] - רמת סיכון (1-10): [ציון]"
                     
                     chat = client.chat.completions.create(
                         messages=[{"role": "user", "content": prompt}],
@@ -110,7 +101,8 @@ if st.button("בצע ניתוח עומק 🚀"):
                     if news:
                         for item in news[:5]:
                             st.markdown(f"🔗 **[{item['title']}]({item['link']})**")
-                            st.caption(f"פורסם ע"י: {item['publisher']}")
+                            # כאן התיקון - השתמשתי בגרש בודד לעטוף את הטקסט כדי שלא יתנגש עם ע"י
+                            st.caption(f'פורסם ע"י: {item.get("publisher", "Unknown")}')
                             st.write("---")
                     else:
                         st.info("אין חדשות זמינות כרגע.")
@@ -119,7 +111,8 @@ if st.button("בצע ניתוח עומק 🚀"):
                     st.subheader("כרטיס ביקור")
                     st.write(f"**סקטור:** {info.get('sector', 'N/A')}")
                     st.write(f"**תעשייה:** {info.get('industry', 'N/A')}")
-                    st.write(f"**עובדים:** {info.get('fullTimeEmployees', 'N/A'):,}")
+                    if isinstance(info.get('fullTimeEmployees'), int):
+                        st.write(f"**עובדים:** {info.get('fullTimeEmployees'):,}")
                     st.write(f"**תיאור:** {info.get('longBusinessSummary', 'אין תיאור זמין.')}")
 
             except Exception as e:
